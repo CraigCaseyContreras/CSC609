@@ -1,15 +1,15 @@
+import random
 import string
 import sys
 import os
 import argparse
-
 from Bozhu_AES import AES
 
 #
 # encrypt.py
 #
 # author:
-# date: 
+# date:
 # last update:
 #
 # template by: bjr sep 2019
@@ -21,64 +21,51 @@ args_g = 0  # args are global
 BLOCK_SIZE = 16  # the AES block size
 KEY_SIZE = 16    # the AES key size
 
-def crypt_ecb(aes,intext):
-	"""
-	encrypts or decrypts text using AES object, in ECB mode
-	"""
+#Whatever our plaintext is, needs to be padded with PKCS#7
+#We don't have encrypt_cbc but we have encrypt_block(self, plaintext)
+#We also have padding which is pad(plaintext)
+#
 
-	# this is just a little test code. It only encrypts exactly one block,
-	# using zero padding
-	intext = (intext + bytes(BLOCK_SIZE))[0:BLOCK_SIZE]
-	assert(len(intext)==BLOCK_SIZE)
+#His bintext is b'hello world\n'
+#His bintext AFTER crypt_ecb is b'\\GA\x8d{.\xf0\x92\x01\x93d<\xe0\xedN\x91'
+#BOTH LENGTH 16
 
-	if args_g.decrypt:
-	# do decryption
-		outtext = aes.decrypt_block(intext)
+def crypt_cbc(aes, intext): #our intext right now is "hello world" so really all we have is "hello world" as the paramter
 
-	else:
-	#do encryption
-		outtext = aes.encrypt_block(intext)
+	#MUST ENCODE OR WONT LET YOU PAD!!!
+	print(intext, "This is the intext of length: ", len(intext))
+	message = intext.encode('utf-8')
+	print(message, "This is the intext encoded of length: ", len(message))
+	#pad the message
+	paddedmessage = aes.pad(message)
+	print(paddedmessage, "This is the padded message of length: ", len(paddedmessage))
 
-	return outtext
+	#Get the IV
+	IV = b'\01' * 16
+	print(IV, "This is the IV of length: ", len(IV))
+	#Now we can encrypt and do the xor? Or do the xor first?
+	#The code does the encrypt WITH the xor at the same time
+
+	blokes = []
+	prev = IV
+
+	#Now we have to split into 16-byte parts
+	for l in range(0, len(paddedmessage), 16):
+		paddedBlock = paddedmessage[l:l+16]
+		#CBC mode so XOR the block with before
+		bloke = aes.encrypt_block(aes.xor_bytes(paddedBlock, prev))
+		blokes.append(bloke)
+		before = bloke
+		print(b''.join(blokes), "Result from the for-loop")
+	return b''.join(blokes)
+
+	#----------------------------------------------------------------
 
 
-def parse_args():
-	parser = argparse.ArgumentParser(description="Encrypt/decrypt stdin. ")
-	parser.add_argument("key", help="encipherment key")
-	parser.add_argument("-d", "--decrypt", action="store_true", help="decrypt, instead of encrypting")
-	parser.add_argument("-m", "--mode", help="mode either cntr (default), cbc, ofb, or ecb")
-	parser.add_argument("-n", "--nonce", help="the initial vector, as ascii. omit for a random nonce (recommended)")
-	parser.add_argument("-p", "--padding", help="padding either pkcs (default), iso, or zero")
-	parser.add_argument("-v", "--verbose", action="store_true", help="verbose")
-	return parser.parse_args()
-
-modes = ["cntr","cbc","ofb","cntr"]
-pads = ["pkcs","iso","zero"]
-
-def main(argv):
-
-	global args_g
-	args_g = parse_args()
-
-	if args_g.mode not in modes:
-		args_g.mode = modes[0]
-	if args_g.padding not in pads:
-		args_g.padding = pads[0]
-
-	## check args
-	if args_g.verbose:
-		print("command line arguments-")
-		print("\t-d:", args_g.decrypt)
-		print("\t-m:", args_g.mode)
-		print("\t-n:", args_g.nonce)
-		print("\t-p:", args_g.padding)
-		print("\t-v:", args_g.verbose)
-		print("\tkey:", args_g.key)
-
+def main():
 	aes = AES(bytes(KEY_SIZE))
+	message = "hello world"#.encode('utf-8') I used message instead of bintext
+	crypt_cbc(aes, message);
 
-		bintext = "Hello World"
-
-
-
-main(sys.argv)
+if __name__== '__main__':
+	main()
