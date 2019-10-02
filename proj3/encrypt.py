@@ -81,7 +81,7 @@ def crypt_cbc(aes, intext, mode):
 			#CBC mode so XOR the block with before
 			bloke = aes.encrypt_block(aes.xor_bytes(paddedBlock, prev))
 			blokes.append(bloke)
-			before = bloke
+			prev = bloke
 			print("||", b''.join(blokes), "||" "Result from the for-loop")
 		return b''.join(blokes)
 
