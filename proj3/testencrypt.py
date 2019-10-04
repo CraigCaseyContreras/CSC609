@@ -33,6 +33,12 @@ KEY_SIZE = 16    # the AES key size
 def _concat_list(a,b):
 	return a + bytes(b)
 
+def crypt_ofb(aes, intext):
+
+	return
+
+#-------------------------------------------
+
 def crypt_cbc(aes, intext, mode):
 	#our intext right now is "hello world" so really all we have is "hello world" as the paramter
 	#intext can also be a ciphertext so can be either one
@@ -43,7 +49,6 @@ def crypt_cbc(aes, intext, mode):
 	#print(IV, "This is the IV of length: ", len(IV))
 
 	if mode == "decrypt":
-		cipherOf0padding = b'\x0b[A\xd8\x0eU\x8ee\x1c\xb3~D\x90o\x81\xeb'
 	#	print("Need to decrypt")
 		#This intext is then a ciphertext
 		blokess = []
@@ -55,9 +60,10 @@ def crypt_cbc(aes, intext, mode):
 			ciph_block = intext[i:i+16]
 			blokess.append(aes.xor_bytes(prevDecrypt, aes.decrypt_block(ciph_block)))
 			prevDecrypt = ciph_block
-		print("||", aes.unpad(b''.join(blokess)), "||" "Result from the CBC - decrypt")
-			#print(aes.bytes2matrix(aes.unpad(b''.join(blokess)))) - what does it do?
-		return aes.unpad(b''.join(blokess))
+		stringer = aes.unpad(b''.join(blokess))
+		#print(blokess) # blocks are working
+		print (stringer.decode('utf-8'), "Result from the CBC - decrypt")
+		return stringer.decode('utf-8')
 
 	else:
 		#This intext is a plaintext
@@ -89,64 +95,54 @@ def crypt_cbc(aes, intext, mode):
 			bloke = aes.encrypt_block(aes.xor_bytes(paddedBlock, prev))
 			blokes.append(bloke)
 			prev = bloke
-		print("||", b''.join(blokes), "||" "Result from CBC - encrypt")
-		return b''.join(blokes)
-
-		#Another Way? Debug this! Why not giving the same answer??? Not working because i messed up in variable names!!
-		# for l in range(0, len(paddedmessage), 16):
-		# 	paddedBlock = paddedmessage[l:l + 16]
-		# 	prev = aes.encrypt_block(bytes([(p ^ j) for (p, j) in zip(paddedBlock, prev)]))
-		# 	blokes.append(prev)
-		# 	bloke = prev
-		# 	print("||", b''.join(blokes), "||" "Using the GitHub")
-		# return(prev)
+		#print(blokes[0], len(blokes[0])) #Blocks are working!!!
+		joinedBlockes = b''.join(blokes)
+		print(joinedBlockes, "Result from CBC - encrypt")
+		return joinedBlockes
 	#----------------------------------------------------------------
 
-def crypt_cfb(aes, intext, mode):
-
-	IV = b'\01' * 16
-
-	if mode == "decrypt":
-		shift_done = IV
-		decrypted = []
-		for j in range(0, len(intext), 16):
-			cipher_segment = intext[j:j+16]
-			xor_segment = aes.encrypt_block(shift_done)[:len(cipher_segment)]
-			pt_segment = aes.xor_bytes(cipher_segment, xor_segment)
-			shift_done = _concat_list(shift_done[len(cipher_segment):], cipher_segment)
-			decrypted.append(pt_segment)
-		print("||", b''.join(decrypted), "||" "Result from the CFB - decrypt")
-		return ("||", b''.join(decrypted))
-
-	else:
-		message = intext.encode('utf-8')
-		shift_done = IV
-		# pad the message
-		#paddedmessage = aes.pad(message)
-		encrypted = []
-		for i in range(0, len(message), 16):
-			pt_segment = message[i: i + 16]
-			xor_segment = aes.encrypt_block(shift_done)[:len(pt_segment)]
-			cipher_segment = aes.xor_bytes(pt_segment, xor_segment)
-
-			shift_done = _concat_list(shift_done[len(cipher_segment):], cipher_segment)
-			encrypted.append(cipher_segment)
-		print("||", b''.join(encrypted), "||" "Result from the CFB - encrypt")
-		return ("||", b''.join(encrypted))
+# def crypt_cfb(aes, intext, mode):
+#
+# 	IV = b'\01' * 16
+#
+# 	if mode == "decrypt":
+# 		shift_done = IV
+# 		decrypted = []
+# 		for j in range(0, len(intext), 16):
+# 			cipher_segment = intext[j:j+16]
+# 			xor_segment = aes.encrypt_block(shift_done)[:len(cipher_segment)]
+# 			pt_segment = aes.xor_bytes(cipher_segment, xor_segment)
+# 			shift_done = _concat_list(shift_done[len(cipher_segment):], cipher_segment)
+# 			decrypted.append(pt_segment)
+# 		print(b''.join(decrypted), "||" "Result from the CFB - decrypt")
+# 		return (b''.join(decrypted))
+#
+# 	else:
+# 		message = intext.encode('utf-8')
+# 		shift_done = IV
+# 		# pad the message
+# 		#paddedmessage = aes.pad(message)
+# 		encrypted = []
+# 		for i in range(0, len(message), 16):
+# 			pt_segment = message[i: i + 16]
+# 			xor_segment = aes.encrypt_block(shift_done)[:len(pt_segment)]
+# 			cipher_segment = aes.xor_bytes(pt_segment, xor_segment)
+#
+# 			shift_done = _concat_list(shift_done[len(cipher_segment):], cipher_segment)
+# 			encrypted.append(cipher_segment)
+# 		print(b''.join(encrypted), "||" "Result from the CFB - encrypt")
+# 		return (b''.join(encrypted))
 
 
 #---------------------------------------------------
 
 
 class Counter(object):
-    '''A counter object for the Counter (CTR) mode of operation.
+    '''A counter object for the Counter (CTR) mode of operation.'''
 
-       To create a custom counter, you can usually just override the
-       increment method.'''
-
-    def __init__(self, initial_value = 1):
+    def __init__(self, init_value = 1):
         # Convert the value into an array of bytes long
-        self._counter = [ ((initial_value >> i) % 256) for i in range(128 - 8, -1, -8) ]
+        self._counter = [ ((init_value >> i) % 256) for i in range(128 - 8, -1, -8) ]
 
     value = property(lambda s: s._counter)
 
@@ -163,12 +159,11 @@ class Counter(object):
 
 #----------------------------------------------------
 
-def crypt_cntr(aes, intext):
-	# if mode == "decrypt":
-	# 	return
-	#
-	# else:
-		# Convert the value into an array of bytes long
+def crypt_cntr(aes, intext, mode):
+
+	# Stream cipher so no need to pad!!!
+
+	if mode == "decrypt":
 		counter = Counter()
 		remaining_counter = []
 		while len(remaining_counter) < len(intext):
@@ -177,21 +172,37 @@ def crypt_cntr(aes, intext):
 
 		#pt = intext.encode('utf-8') #USE ONLY WHEN HAVE PLAINTEXT
 		pt = bytearray(intext) #USE WHEN HAVE THE CIPHERTEXT!!!
+		decrypted = aes.xor_bytes(pt, remaining_counter) #[ (p ^ c) for (p, c) in zip(pt, remaining_counter) ]
+		remaining_counter = remaining_counter[len(decrypted):]
+		pt = decrypted.decode()
+		print(pt, "Result from cntr- decrypt")
+		#print(decrypted, "Result from the cntr - decrypt")
+		return pt
+
+	else:
+		counter = Counter()
+		remaining_counter = []
+		while len(remaining_counter) < len(intext):
+			remaining_counter  += aes.encrypt_block(counter.value)
+			counter.increment()
+
+		pt = intext.encode('utf-8') #USE ONLY WHEN HAVE PLAINTEXT
+		#pt = bytearray(intext) #USE WHEN HAVE THE CIPHERTEXT!!!
 		encrypted = aes.xor_bytes(pt, remaining_counter) #[ (p ^ c) for (p, c) in zip(pt, remaining_counter) ]
 		remaining_counter = remaining_counter[len(encrypted):]
-		print("||", encrypted, "||" "Result from the cntr - encrypt")
+		print(encrypted, "Result from the cntr - encrypt")
 		return encrypted
 
 def main():
 
 	aes = AES(bytes(KEY_SIZE))
-	message = "hello world"
+	message = "My name is Craig Contreras. Attack can commence."
 	decrypt = "decrypt"
 	encrypt = "encrypt"
 	ciphertextCBC = crypt_cbc(aes, message, encrypt)
 	messageCBC = crypt_cbc(aes, ciphertextCBC, decrypt)
-	#ciphertextCNTR = crypt_cntr(aes, message)
-	messageCNTR = crypt_cntr(aes, b'0\x87\x90\xa2\x95^G\x0eD\x13y')
+	ciphertextCNTR = crypt_cntr(aes, message, encrypt)
+	messageCNTR = crypt_cntr(aes, ciphertextCNTR, decrypt)
 
 if __name__== '__main__':
 	main()
