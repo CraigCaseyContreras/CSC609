@@ -69,6 +69,7 @@ def crypt_cbc(aes, intext, mode):
 		#MUST ENCODE OR WONT LET YOU PAD!!!
 		#print(intext, "This is the intext of length: ", len(intext))
 		message = intext.encode('utf-8')
+		message = bytearray(message)
 		#print(message, "This is the intext encoded of length: ", len(message))
 		#pad the message
 		paddedmessage = aes.pad(message)
@@ -133,25 +134,64 @@ def crypt_cfb(aes, intext, mode):
 		print("||", b''.join(encrypted), "||" "Result from the CFB - encrypt")
 		return ("||", b''.join(encrypted))
 
+
+#---------------------------------------------------
+
+
+class Counter(object):
+    '''A counter object for the Counter (CTR) mode of operation.
+
+       To create a custom counter, you can usually just override the
+       increment method.'''
+
+    def __init__(self, initial_value = 1):
+        # Convert the value into an array of bytes long
+        self._counter = [ ((initial_value >> i) % 256) for i in range(128 - 8, -1, -8) ]
+
+    value = property(lambda s: s._counter)
+
+    def increment(self):
+        '''Increment the counter (overflow rolls back to 0).'''
+        for i in range(len(self._counter) - 1, -1, -1):
+            self._counter[i] += 1
+            if self._counter[i] < 256: break
+            # Carry the one
+            self._counter[i] = 0
+        # Overflow
+        else:
+            self._counter = [ 0 ] * len(self._counter)
+
 #----------------------------------------------------
 
-def crypt_cntr(aes, intext, mode):
-	remaining_cntr = []
-	while(remaining_cntr < len(intext)):
+def crypt_cntr(aes, intext):
+	# if mode == "decrypt":
+	# 	return
+	#
+	# else:
+		# Convert the value into an array of bytes long
+		counter = Counter()
+		remaining_counter = []
+		while len(remaining_counter) < len(intext):
+			remaining_counter  += aes.encrypt_block(counter.value)
+			counter.increment()
 
-
-
+		#pt = intext.encode('utf-8') #USE ONLY WHEN HAVE PLAINTEXT
+		pt = bytearray(intext) #USE WHEN HAVE THE CIPHERTEXT!!!
+		encrypted = aes.xor_bytes(pt, remaining_counter) #[ (p ^ c) for (p, c) in zip(pt, remaining_counter) ]
+		remaining_counter = remaining_counter[len(encrypted):]
+		print("||", encrypted, "||" "Result from the cntr - encrypt")
+		return encrypted
 
 def main():
+
 	aes = AES(bytes(KEY_SIZE))
-	messageCBC = "hello world"
-	messageCFB = "hello world"
+	message = "hello world"
 	decrypt = "decrypt"
 	encrypt = "encrypt"
-	ciphertextCBC = b'\xa6\xbb\x1f~J5j\xc1p\xf2\x03\x04\\\xa96\x8e'
-	ciphertextCFB =  b'\x89(1b\x8dWb\xb0z\xd8q'
-	crypt_cbc(aes, messageCBC, encrypt);
-	crypt_cfb(aes, messageCFB, encrypt)
+	ciphertextCBC = crypt_cbc(aes, message, encrypt)
+	messageCBC = crypt_cbc(aes, ciphertextCBC, decrypt)
+	#ciphertextCNTR = crypt_cntr(aes, message)
+	messageCNTR = crypt_cntr(aes, b'0\x87\x90\xa2\x95^G\x0eD\x13y')
 
 if __name__== '__main__':
 	main()
