@@ -60,10 +60,10 @@ def crypt_cbc(aes, intext, mode):
 			ciph_block = intext[i:i+16]
 			blokess.append(aes.xor_bytes(prevDecrypt, aes.decrypt_block(ciph_block)))
 			prevDecrypt = ciph_block
-		stringer = aes.unpad(b''.join(blokess))
+		outext = aes.unpad(b''.join(blokess))
 		#print(blokess) # blocks are working
-		print (stringer.decode('utf-8'), "Result from the CBC - decrypt")
-		return stringer.decode('utf-8')
+		print (outext, "Result from the CBC - decrypt")
+		# return outext
 
 	else:
 		#This intext is a plaintext
@@ -76,6 +76,7 @@ def crypt_cbc(aes, intext, mode):
 		#print(intext, "This is the intext of length: ", len(intext))
 		message = intext.encode('utf-8')
 		message = bytearray(message)
+
 		#print(message, "This is the intext encoded of length: ", len(message))
 		#pad the message
 		paddedmessage = aes.pad(message)
@@ -96,9 +97,9 @@ def crypt_cbc(aes, intext, mode):
 			blokes.append(bloke)
 			prev = bloke
 		#print(blokes[0], len(blokes[0])) #Blocks are working!!!
-		joinedBlockes = b''.join(blokes)
-		print(joinedBlockes, "Result from CBC - encrypt")
-		return joinedBlockes
+		outext = b''.join(blokes)
+		print(outext, "Result from CBC - encrypt")
+	return outext
 	#----------------------------------------------------------------
 
 # def crypt_cfb(aes, intext, mode):
@@ -206,5 +207,3 @@ def main():
 
 if __name__== '__main__':
 	main()
-
-

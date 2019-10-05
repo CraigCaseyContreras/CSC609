@@ -9,7 +9,7 @@ from Bozhu_AES import AES
 # encrypt.py
 #
 # author:
-# date: 
+# date:
 # last update:
 #
 # template by: bjr sep 2019
@@ -21,6 +21,48 @@ args_g = 0  # args are global
 BLOCK_SIZE = 16  # the AES block size
 KEY_SIZE = 16    # the AES key size
 
+def crypt_cbc(aes, intext):
+
+	IV = b'\01' * 16
+
+	if args_g.decrypt:
+		#This intext is then a ciphertext
+		blokess = []
+		prevDecrypt = IV
+
+		#Split in 16 byte parts
+		#The following need to be indented
+		for i in range(0, len(intext), 16):
+			ciph_block = intext[i:i+16]
+			blokess.append(aes.xor_bytes(prevDecrypt, aes.decrypt_block(ciph_block)))
+			prevDecrypt = ciph_block
+		outext = aes.unpad(b''.join(blokess))
+
+	else:
+		#This intext is a plaintext
+		#MUST ENCODE OR WONT LET YOU PAD!!!
+
+		message = (intext.encode('utf-8'))
+		message = bytearray(message)
+
+		#pad the message
+		paddedmessage = aes.pad(message)
+		#The code does the encrypt WITH the xor at the same time
+
+		blokes = []
+		prev = IV
+
+		#Now we have to split into 16-byte parts
+		for l in range(0, len(paddedmessage), 16):
+			paddedBlock = paddedmessage[l:l+16]
+			#CBC mode so XOR the block with before
+			bloke = aes.encrypt_block(aes.xor_bytes(paddedBlock, prev))
+			blokes.append(bloke)
+			prev = bloke
+		#print(blokes[0], len(blokes[0])) #Blocks are working!!!
+		outext = b''.join(blokes)
+	return outext
+
 def crypt_ecb(aes,intext):
 	"""
 	encrypts or decrypts text using AES object, in ECB mode
@@ -29,6 +71,7 @@ def crypt_ecb(aes,intext):
 	# this is just a little test code. It only encrypts exactly one block,
 	# using zero padding
 	intext = (intext + bytes(BLOCK_SIZE))[0:BLOCK_SIZE]
+	print(intext, "HAHAHA")
 	assert(len(intext)==BLOCK_SIZE)
 
 	if args_g.decrypt:
@@ -78,11 +121,12 @@ def main(argv):
 		print("\tkey:", args_g.key)
 
 	aes = AES(bytes(KEY_SIZE))
-	
+
 	try:
 		bintext = sys.stdin.buffer.read()
 		#print(bintext, "+++bintext1")
 		bintext = crypt_ecb(aes,bintext)
+		#print(bintext)
 		#print(bintext, "+++bintext2 of length: ", len(bintext))
 		sys.stdout.buffer.write(bintext)
 	except Exception:
