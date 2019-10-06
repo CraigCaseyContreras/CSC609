@@ -71,7 +71,7 @@ def crypt_ecb(aes,intext):
 	# this is just a little test code. It only encrypts exactly one block,
 	# using zero padding
 	intext = (intext + bytes(BLOCK_SIZE))[0:BLOCK_SIZE]
-	print(intext, "HAHAHA")
+	print(intext, "HAHAHAHA")
 	assert(len(intext)==BLOCK_SIZE)
 
 	if args_g.decrypt:
