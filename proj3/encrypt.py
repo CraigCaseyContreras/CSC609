@@ -8,10 +8,10 @@ from Bozhu_AES import AES
 #
 # encrypt.py
 #
-# author: Victoria Roddy
-# date: 6 October 2019
-# last update: 6 October 2019
-# I WORKED WITH: Craig and Lucas
+# author: Craig Contreras
+# date: October 7 2019
+# last update: October 7 2019
+# Attributions: Victoria, Lucas, Kataryzyna
 #
 # template by: bjr sep 2019
 # template update: 24 sep 2019
@@ -23,157 +23,169 @@ BLOCK_SIZE = 16  # the AES block size
 KEY_SIZE = 16  # the AES key size
 
 
-def pkcs_padding(plaintext):
-    # CODE TAKEN FROM __init__.py file
-    padding_len = 16 - (len(plaintext) % 16)
-    padding = bytes([padding_len] * padding_len)
-    return plaintext + padding
+#Does pkcs padding calling onto AES
+def pkcs_padding(aes, plaintext):
+    padded_messg = aes.pad(plaintext)
+    return padded_messg
 
+#Unpads pkcs padding
+def remove_pkcs_padding(aes, ciphertext):
+    unpadded_messg = aes.unpad(ciphertext)
+    return unpadded_messg
 
-def remove_pkcs_padding(plaintext):
-    # CODE TAKEN FROM __init__.py file
-    padding_len = plaintext[-1]
-    assert padding_len > 0
-    message, padding = plaintext[:-padding_len], plaintext[-padding_len:]
-    assert all(p == padding_len for p in padding)
-    return message
+#generates a random IV of size 16
+def generate_iv(BLOCK_SIZE):
+    iv = os.urandom(BLOCK_SIZE)
+    return iv
 
-
+#Does zero padding
 def zero_padding(plaintext):
-    padding_length = 16 - (len(plaintext) % 16)
-    padding = bytes([0] * padding_length)
-    return plaintext + padding
+    pad_length = 16 - (len(plaintext) % 16)
+    pad = bytes([0] * pad_length)
+    return plaintext + pad
 
-
+#Removes zero padding
 def remove_zero_padding(ciphertext):
-    cipher_strip = ciphertext.strip(b'\x00')
-    return cipher_strip
+    zero_strip = ciphertext.strip(b'\x00')
+    return zero_strip
 
-
+#Does iso padding
 def iso_padding(plaintext):
-    padding_length = 16 - (len(plaintext) % 16)
-    padding = b'\x80' + bytes([0] * (padding_length-1))
-    return plaintext + padding
+    pad_length = 16 - (len(plaintext) % 16)
+    pad = b'\x80' + bytes([0] * (pad_length-1))
+    return plaintext + pad
 
-
-def remove_iso_padding(plaintext):
-    plain_strip = plaintext.strip(b'\x00')
-    plain_strip2 = plain_strip.strip(b'\x80')
-    return plain_strip2
+#Removes iso padding
+def remove_iso_padding(ciphertext):
+    zero_strip = ciphertext.strip(b'\x00')
+    eightzero_strip = zero_strip.strip(b'\x80')
+    return eightzero_strip
 
 def crypt_ecb(aes, intext):
  
     if args_g.decrypt:
 
         decryption_blocks = []
-        block = [intext[i:i+16] for i in range(0, len(intext), 16)]
+        block = [intext[i:i+16] for i in range(0, len(intext), 16)] #makes the block
+        
         for i in range(0, len(block)):
-            ciph_block = block[i]
-            decryption_blocks.append(aes.decrypt_block(ciph_block))
-            result = b''.join(decryption_blocks)
+            ciph_block = block[i] #The ciph block
+            decrypted_block = aes.decrypt_block(ciph_block) #decrypts the ciph block
+            decryption_blocks.append(decrypted_block) #Adds to the decrypted blocks
+            result = b''.join(decryption_blocks) #Puts them together
+        
         if args_g.padding == "pkcs":
-            output = remove_pkcs_padding(result)
+            output = remove_pkcs_padding(aes, result)
+        elif args_g.padding == "zero":
+            output = remove_zero_padding(result)
+        elif args_g.padding == "iso":
+            output = remove_iso_padding(result)
+        else:
+            output = remove_pkcs_padding(aes, result)
+
+    else:
+
+        if args_g.padding == "pkcs":
+            padded_messg = pkcs_padding(aes, intext)
+        elif args_g.padding == "zero":
+            padded_messg = zero_padding(intext)
+        elif args_g.padding == "iso":
+            padded_messg = iso_padding(intext)
+        else:
+            padded_messg = pkcs_padding(intext)
+        
+        blobs = []
+        
+        for i in range(0, len(padded_messg), 16):
+            ptBlocks = padded_messg[i:i + 16] #Gets set of 16
+            res = aes.encrypt_block(ptBlocks) #encrypts the set
+            blobs.append(res) #Adds to the blob
+        output = b''.join(blobs) #Puts them together
+        
+    return output
+
+def crypt_cntr(aes, intext):
+    IV = generate_iv(BLOCK_SIZE)
+
+    if args_g.decrypt:
+
+        decryption_blocks = []
+        block = [intext[i:i + 16] for i in range(0, len(intext), 16)] #Gets the block
+        IV = block[0] #IV gotten from first element
+        block.pop(0) #First element popped
+        iv_block = IV #Iv block is the IV
+        
+        for i in range(0, len(block)):
+            ciph_block = block[i] #The cipher block
+            jul = aes.encrypt_block(iv_block) #Encrypts to decrypt because symmetric
+            xored_result = aes.xor_bytes(jul, ciph_block)
+            decryption_blocks.append(xored_result) #XORs first then appends to the blocks
+            result = b''.join(decryption_blocks) #Puts them together
+
+            # INCREMENTS COUNTER BY +1
+            iv_integer = int.from_bytes(iv_block, "big") #Gets an integer from the IV
+            iv_integer_increase = iv_integer + 1 #Adds one to the counter
+            iv_block = iv_integer_increase.to_bytes(16, byteorder="big") #Returns IV to its bytes
+
+        if args_g.padding == "pkcs":
+            output = remove_pkcs_padding(aes, result)
         elif args_g.padding == "zero":
             output = remove_zero_padding(result)
         elif args_g.padding == "iso":
             output = remove_iso_padding(result)
         else:
             output = remove_pkcs_padding(result)
-
-    else:
-
-        # do encryption
-        blobs = []
-        if args_g.padding == "pkcs":
-            padded_messg = pkcs_padding(intext)
-        elif args_g.padding == "zero":
-            padded_messg = zero_padding(intext)
-        elif args_g.padding == "iso":
-            padded_messg = iso_padding(intext)
-        else:
-            padded_messg = pkcs_padding(intext)
-        for i in range(0, len(padded_messg), 16):
-            ptBlocks = padded_messg[i:i + 16]
-            res = aes.encrypt_block(ptBlocks)
-            blobs.append(res)
-        output = b''.join(blobs)
-        
-    return output
-
-def crypt_cntr(aes, intext):
-    IV = os.urandom(16)
-
-    if args_g.decrypt:
-
-        decryption_blocks = []
-        block = [intext[i:i + 16] for i in range(0, len(intext), 16)]
-        IV = block[0]
-        block.pop(0)
-        iv_block = IV
-        for i in range(0, len(block)):
-            ciph_block = block[i]
-            jul = aes.encrypt_block(iv_block)
-            decryption_blocks.append(aes.xor_bytes(jul, ciph_block))
-
-            # INCREMENTS COUNTER BY +1
-            iv_int = int.from_bytes(iv_block, "big")
-            iv_int_inc = iv_int + 1
-            iv_block = iv_int_inc.to_bytes(16, byteorder="big")
-
-        if args_g.padding == "pkcs":
-            output = remove_pkcs_padding(b''.join(decryption_blocks))
-        elif args_g.padding == "zero":
-            output = remove_zero_padding(b''.join(decryption_blocks))
-        elif args_g.padding == "iso":
-            output = remove_iso_padding(b''.join(decryption_blocks))
-        else:
-            output = remove_pkcs_padding(b''.join(decryption_blocks))
     
     else:
 
         if args_g.padding == "pkcs":
-            padded_messg = pkcs_padding(intext)
+            padded_messg = pkcs_padding(aes, intext)
         elif args_g.padding == "zero":
             padded_messg = zero_padding(intext)
         elif args_g.padding == "iso":
             padded_messg = iso_padding(intext)
         else:
             padded_messg = pkcs_padding(intext)
+        
         blobs = []
         iv_block = IV
+        
         for i in range(0, len(padded_messg), 16):
-            ptBlocks = padded_messg[i:i + 16]
-            encrypt_iv = aes.encrypt_block(iv_block)
-            block = aes.xor_bytes(encrypt_iv, ptBlocks)
-            blobs.append(block)
+            ptBlocks = padded_messg[i:i + 16] #Gets a set of 16 or a block
+            encrypt_iv = aes.encrypt_block(iv_block) #Encrypts
+            block = aes.xor_bytes(encrypt_iv, ptBlocks) #XORs
+            blobs.append(block) #Adds to the blob
 
             # INCREMENTS COUNTER BY +1
-            iv_int = int.from_bytes(iv_block, "big")
-            iv_int_inc = iv_int + 1
-            iv_block = iv_int_inc.to_bytes(16, byteorder="big")
+            iv_integer = int.from_bytes(iv_block, "big") #Gets an integer from the IV
+            iv_integer_increase = iv_integer + 1 #Adds 1 to the counter
+            iv_block = iv_integer_increase.to_bytes(16, byteorder="big") #Returns the IV into the bytes
 
-        blobs.insert(0, IV)
-        output = b''.join(blobs)
+        blobs.insert(0, IV) #Stores IV at the beginning for decryption
+        output = b''.join(blobs) #Joins together
 
     return output
 
 def crypt_cbc(aes, intext):
-    IV = os.urandom(16)
+    IV = generate_iv(BLOCK_SIZE) #generates random IV of size 16
 
     if args_g.decrypt:
 
         decryption_blocks = []
-        block = [intext[i:i + 16] for i in range(0, len(intext), 16)]
-        iv_block = block[0]
-        block.pop(0)
-        # Splits in 16-byte parts.
+        block = [intext[i:i + 16] for i in range(0, len(intext), 16)] #Gets the intext and makes it into the blocks
+        iv_block = block[0] #Gets the IV that was stored
+        block.pop(0) #Pops the IV out
+        # Splits in 16-byte parts
+        
         for i in range(0, len(block)):
             ciph_block = block[i]
-            decryption_blocks.append(aes.xor_bytes(iv_block, aes.decrypt_block(ciph_block)))
-            iv_block = ciph_block
+            decrypted_block = aes.decrypt_block(ciph_block)
+            decryption_blocks.append(aes.xor_bytes(iv_block, decrypted_block)) #Uses the IV to start decrypting
+            iv_block = ciph_block #Now just cycles through the blocks to decrypt
             result = b''.join(decryption_blocks)
+        
         if args_g.padding == "pkcs":
-            output = remove_pkcs_padding(result)
+            output = remove_pkcs_padding(aes, result)
         elif args_g.padding == "zero":
             output = remove_zero_padding(result)
         elif args_g.padding == "iso":
@@ -185,77 +197,77 @@ def crypt_cbc(aes, intext):
     else:
 
         if args_g.padding == "pkcs":
-            padded_messg = pkcs_padding(intext)
+            padded_messg = pkcs_padding(aes, intext)
         elif args_g.padding == "zero":
             padded_messg = zero_padding(intext)
         elif args_g.padding == "iso":
             padded_messg = iso_padding(intext)
         else:
             padded_messg = pkcs_padding(intext)
+        
         blobs = []
         xor_block = IV
-        # Splits in 16-byte parts.
+        # Splits in 16-byte parts
         for i in range(0, len(padded_messg), 16):
-            ptBlocks = padded_messg[i:i + 16]
+            ptBlocks = padded_messg[i:i + 16] #Gets in sets of 16
             # CBC mode encrypt: encrypt(plaintext_block XOR previous)
-            blockCT = aes.encrypt_block(aes.xor_bytes(ptBlocks, xor_block))
-            blobs.append(blockCT)
-            last_ciphertext = blockCT
-        blobs.insert(0, IV)
+            blockCT = aes.encrypt_block(aes.xor_bytes(ptBlocks, xor_block)) #XORs the IV and the plaintext block
+            blobs.append(blockCT) #Adds to the blob 
+            xor_block = blockCT #Cycles through to encrypt
+        blobs.insert(0, IV) #Stores the IV into the first element of the blob array
         output = b''.join(blobs)
 
     return output
 
 def crypt_ofb(aes, intext):
-    iv = os.urandom(16)
+    iv = generate_iv(BLOCK_SIZE) #generates IV
 
     if args_g.decrypt:
 
         decryption_blocks = []
         # splits cipher test into blocks of size 16
-        block = [intext[i:i + 16] for i in range(0, len(intext), 16)]
-        iv_block = block[0]
-        block.pop(0)
+        block = [intext[i:i + 16] for i in range(0, len(intext), 16)] #Gets the intext and makes it into the blocks
+        iv_block = block[0] #Gets the IV that was stored
+        block.pop(0) #Pops the IV out
         # Splits in 16-byte parts.
         for i in range(0, len(block)):
-            ciphertext_block = block[i]
-            # CBC mode decrypt: previous XOR decrypt(ciphertext)
-            # decryption_blocks.append(aes.xor_bytes(iv_block, aes.decrypt_block(iv_block)))
-            encrypted_iv = aes.encrypt_block(iv_block)
+            ciphertext_block = block[i] #the ciph block
+            encrypted_iv = aes.encrypt_block(iv_block) #Encrypts the IV block because symmetric
             iv_block = encrypted_iv
-            decryption_blocks.append(aes.xor_bytes(encrypted_iv, ciphertext_block))
-            result = b''.join(decryption_blocks)
+            xored_result = aes.xor_bytes(encrypted_iv, ciphertext_block) #XORs the encrypted iv and the ciph block
+            decryption_blocks.append(xored_result) #Adds the XORed result 
+            result = b''.join(decryption_blocks) #Puts them together
         if args_g.padding == "pkcs":
-            output = remove_pkcs_padding(b''.join(decryption_blocks))
+            output = remove_pkcs_padding(aes, result)
         elif args_g.padding == "zero":
-            output = remove_zero_padding(b''.join(decryption_blocks))
+            output = remove_zero_padding(result)
         elif args_g.padding == "iso":
-            output = remove_iso_padding(b''.join(decryption_blocks))
+            output = remove_iso_padding(result)
         else:
-            output = remove_pkcs_padding(b''.join(decryption_blocks))
+            output = remove_pkcs_padding(result)
        
     else:
 
         if args_g.padding == "pkcs":
-            padded_messg = pkcs_padding(intext)
+            padded_messg = pkcs_padding(aes, intext)
         elif args_g.padding == "zero":
             padded_messg = zero_padding(intext)
         elif args_g.padding == "iso":
             padded_messg = iso_padding(intext)
         else:
             padded_messg = pkcs_padding(intext)
+        
         blobs = []
         xor_block = iv
         
         for i in range(0, len(padded_messg), 16):
-            ptBlocks = padded_messg[i:i + 16]
-            # CBC mode encrypt: encrypt(plaintext_block XOR previous)
-            jul = aes.encrypt_block(xor_block)
-            xor_block = jul
-            block = aes.xor_bytes(xor_block, ptBlocks)
-            blobs.append(block)
-        blobs.insert(0, iv)
-        output = b''.join(blobs)
+            ptBlocks = padded_messg[i:i + 16] #Gets a block
+            jul = aes.encrypt_block(xor_block) #Jul (for Julia) is the encryppted block
+            xor_block = jul #Not sure if needed or can do directly?
+            block = aes.xor_bytes(xor_block, ptBlocks) #XORs the xor block and the plaintext block
+            blobs.append(block) #Adds to blob
+        blobs.insert(0, iv) #Inserts IV at beginning for use to decrypt
+        output = b''.join(blobs) #Puts them together
 
     return output
 
@@ -264,12 +276,12 @@ def crypt_func(aes, intext, mode):
     output = b''
     if mode == "ecb":
         output = crypt_ecb(aes, intext)
+    elif mode == "cntr":
+        output = crypt_cntr(aes, intext)
     elif mode == "cbc":
         output = crypt_cbc(aes, intext)
     elif mode == "ofb":
         output = crypt_ofb(aes, intext)
-    elif mode == "cntr":
-        output = crypt_cntr(aes, intext)
     return output
 
 
@@ -284,7 +296,7 @@ def parse_args():
     return parser.parse_args()
 
 
-modes = ["ecb", "cbc", "ofb", "cntr"]
+modes = ["cntr", "cbc", "ofb", "ecb"]
 pads = ["pkcs", "iso", "zero"]
 
 
