@@ -15,7 +15,7 @@ F= padding-attack.py
 PWD= "the key phrase" 
 HELLO_WORLD= "hello world"
 GETTYSBURG= "Now we are engaged in a great civil war,testing whether that nation, or any nation so conceived and so dedicated,can long endure."
-
+TESTING= ""
 RED= \033[0;31m
 GREEN= \033[0;32m
 NC= \033[0m
