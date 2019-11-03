@@ -1,0 +1,24 @@
+#
+# makefile for csc507/609 semester 201
+# author: bjr
+# date: 6 oct 2019
+#
+
+LIB= PYTHONPATH="../../class/modules"
+PY3= python3
+#VERBOSE= -v
+VERBOSE=
+
+F= padding-attack.py
+
+PWD= "the key phrase" 
+
+all:
+	make run
+
+run:
+	cat ciphertext.ref | ${LIB} ${PY3} ${F} ${VERBOSE} ${PWD} > decrypted.out
+	diff decrypted.out plaintext.ref
+
+clean:
+	-rm decrypted.out
