@@ -29,7 +29,7 @@ def attack_mode(oracle,intext):
 	print(oracle.padding_oracle(intext)) #Prints out false - so bad padding!!
 	if oracle.padding_oracle(intext) == False:
 		print('INVALID PADDING')
-		print('CRACKING.....')
+		print('CRACKING. PLEASE WAIT....')
 		plaintext = attackCipher(oracle, intext)
 		print(plaintext)
 
@@ -40,7 +40,7 @@ def attack_mode(oracle,intext):
 def attackCipher(oracle, intext):
 	fake_cipher = [0]*16
 	plaintext = [0]*16
-	current = 0
+	location = 0
 	message = ''
 
 	#Gets the amount of blocks
@@ -58,21 +58,21 @@ def attackCipher(oracle, intext):
 				fake_cipher[-iteration]=ju
 				#print(fake_cipher, 'FAKE CIPHER')
 				if oracle.padding_oracle(bytearray(fake_cipher)+blocks[l+1]):
-					current = iteration
-				#	print(current, 'CURRENT')
+					location = iteration
+				#	print(location, 'location')
 					plaintext[-iteration] = ju^iteration^blocks[l][-iteration]
 					#print(blocks[l][-iteration])
 				#	print(plaintext, 'PLAINTEXT')
-			for w in range(1, current+1):
+			for w in range(1, location+1):
 				#for decode the second byte I must set the previous bytes with 'itera+1'
 				fake_cipher[-w] = plaintext[-w]^iteration+1^blocks[l][-w]
 				#print(plaintext[-w], 'PT -W')
 				#print(iteration, 'ITERATION')
 				#print(blocks[l][-w], 'BLOCKS L -W')
-		for k in range(16):
-			if plaintext[k] >= 32:
-				char = chr(int(plaintext[k]))
-				message += char
+		for index in range(16):
+			if plaintext[index] >= 32:
+				character = chr(int(plaintext[index]))
+				message += character
 	return message
 
 	
