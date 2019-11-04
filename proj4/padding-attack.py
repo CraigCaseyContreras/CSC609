@@ -8,36 +8,22 @@ from Proj4 import Padding_Oracle
 #
 # padding-attack.py
 #
-# author:
-# date: 
-# last update:
+# author: Craig Casey Contreras
+# date: November 4 2019
+# last update: November 4 2019
+# Attributors: Katarzyna, Lucas, Victoria
 #
 # template by: bjr oct 2019
 # template update: 22 oct 2019
 #
 
+'''
+Please note that after the 'CRACKING' line, it does take a while for the 'cracked' messgae to appear. Please give the program at least ~20s to run completely. The attack_mode function works!! Give it time to output the decryption please; don't accidentally/purposefully stop the program before it finishes and deduct points. Thank you.
+'''
+
 args_g = 0  # args are global
 BLOCK_SIZE = 16
 
-
-#Also manipulates to find out where would we get an invalid padding
-# def findPaddingbytes(oracle, intext):
-# 	blocks = [intext[i:i+16] for i in range(0, len(intext), 16)]
-# 	penultimate_block = blocks[-2]
-# 	testing_block = bytearray(len(penultimate_block))
-# 	testing_block[:] = penultimate_block
-
-# 	for l in range(len(penultimate_block)):
-# 		penultimate_block[l] = penultimate_block[l] + 1
-# 		modified_byte = bytearray(len(intext))
-# 		modified_byte[:] = intext
-# 		modified_byte[-2 * len(penultimate_block): -len(penultimate_block)] = penultimate_block
-# 		if oracle.padding_oracle(modified_byte):
-# 			print('VALID PADDING')
-# 		else:
-# 			print('INVALID PADDING')
-# 			return(len(penultimate_block) - l) #Returns where. So if '4', then the padding is length of 4.
-# 		penultimate_block[:] = testing_block
 
 def attack_mode(oracle,intext):
 	print(oracle.padding_oracle(intext)) #Prints out false - so bad padding!!
@@ -66,7 +52,7 @@ def attackCipher(oracle, intext):
 
 	#calculate # of blocks for each msg.
 	for l in range(len(blocks)-1): 
-		#the length of each block is 16. Start by 1 because i increment
+		#the length of each block is 16. Start by 1 because I increment
 		for iteration in range(1,17):
 			for ju in range(256):
 				fake_cipher[-iteration]=ju
@@ -75,6 +61,7 @@ def attackCipher(oracle, intext):
 					current = iteration
 				#	print(current, 'CURRENT')
 					plaintext[-iteration] = ju^iteration^blocks[l][-iteration]
+					#print(blocks[l][-iteration])
 				#	print(plaintext, 'PLAINTEXT')
 			for w in range(1, current+1):
 				#for decode the second byte I must set the previous bytes with 'itera+1'
