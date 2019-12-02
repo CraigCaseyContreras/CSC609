@@ -62,9 +62,9 @@ class RSA:
 		self.p, self.q = RSA.RSA_100_p, RSA.RSA_100_q
 		self.n = self.p * self.q
 		self.e = RSA.RSA_100_e
-		
-		self.d = self.calc_d()
 		self.phi_n = self.calc_phi()
+		self.d = self.calc_d()
+		
 
 	def __repr__(self):
 		return "class RSA:\n\tn={}\n\tp={}\n\tq={}\n\te={}\n\td={}\n".format(self.n,
@@ -91,37 +91,44 @@ class RSA:
 		"""
 		return any suitable encryption exponent
 		"""
-
-		#Choose an integer e such that e and phi(n) are coprime
-		e = random.randrange(1, phi)
-		print("E: ",e)
-		return e
+		list_randos = [3, 5 ,17 ,257, 65537]
+		exponent = random.choice(list_randos)
+		return exponent
 
 	def calc_phi(self):
 		"""
 		returns the value of phi(self.n)
 		"""
-		phi = (self.p - 1) * (self.q - 1)
-		print("Asnwer: ", phi)
-		
-		return phi
+		value = (self.p -1)*(self.q -1)
+		return value
 
 	def calc_d(self):
 		"""
 		returns d, the inverse of self.e in the integers
 		mod self.phi
 		"""
-
-		#So find the multiplicative inverse??
-		#Our two variables are d, which we have to figure out, and phi_n NOT phi
-		d = None
+		d = 0
 		x1 = 0
-		x2 = 1
+		x2 = 0
 		y1 = 1
-		#temp_phi = self.phi_n - but there is no self.phi or self.phi_n wtf???
-		test = self.phi_n
-		#assert( (d * self.e) % self.phi_n == 1)
-		return d
+		temp_phi = self.phi_n
+		
+		while self.e > 0:
+			temp1 = temp_phi/self.e
+			temp2 = temp_phi- temp1 * self.e
+			temp_phi = self.e
+			self.e = temp2
+            
+			x = x2 - temp1 * x1
+			y = d - temp1 * y1
+            
+			x2 = x1
+			x1 = x
+			d = y1
+			y1 = y
+            
+		if temp_phi == 1:
+			return d + self.phi_n
 
 	def encrypt(self,m):
 		"""
@@ -183,7 +190,7 @@ def rsa_test(trials):
 		m = random.randint(2,rsa.get_public()[1])
 		c = rsa.encrypt(m)
 		m2 = rsa.decrypt(c)
-		#assert(m==m2)
+		assert(m==m2)
 		print("m:{}\nc:{}".format(m,c))
 	return True
 
