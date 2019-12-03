@@ -99,43 +99,43 @@ class RSA:
 		"""
 		returns the value of phi(self.n)
 		"""
-		value = (self.p -1)*(self.q -1)
-		return value
+	
+		if self.p ==1:
+    			phi = (self.p)*(self.q -1)
+		elif self.q == 1:
+    			phi = (self.p - 1)*(self.q)
+		else:
+    			phi = (self.p - 1)*(self.q - 1)
+		print(phi, 'THIS IS THE VALUE OF PHI')
+		return phi
 
 	def calc_d(self):
 		"""
 		returns d, the inverse of self.e in the integers
 		mod self.phi
 		"""
-		d = 0
-		x1 = 0
-		x2 = 0
-		y1 = 1
-		temp_phi = self.phi_n
+		g,y,x = extended_gcd(self.e, self.phi_n)
+		d = x% self.phi_n
+		print(self.phi_n)
+		print((d*self.e) % self.phi_n, 'THIS IS THE VALUE')
+		assert( (d * self.e) % self.phi_n == 1)
 		
-		while self.e > 0:
-			temp1 = temp_phi/self.e
-			temp2 = temp_phi- temp1 * self.e
-			temp_phi = self.e
-			self.e = temp2
-            
-			x = x2 - temp1 * x1
-			y = d - temp1 * y1
-            
-			x2 = x1
-			x1 = x
-			d = y1
-			y1 = y
-            
-		if temp_phi == 1:
-			return d + self.phi_n
+		return d
 
 	def encrypt(self,m):
 		"""
 		encrypts m and returns encrypted value
 		complete this function
+
+		Need to encrypt by taking m to the power of e mod n
 		"""
-		return "ciphertext"
+		# Note that m is an intger!!! The multiplicative inverse that was done is the private key.
+		# test = self.d --> works
+		# test2 = self.e --> works
+		# test3 = self.phi_n --> works
+		# test4 = self.n --> works
+		ciphertext = (m ** self.e) % self.n
+		return ciphertext
 
 	def decrypt(self,c):
 		"""
