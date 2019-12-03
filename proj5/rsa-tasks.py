@@ -9,8 +9,9 @@ import time
 #	date of template: 16 nov 2019
 #
 #	--student information--
-#	name:
-#	date: 
+#	name: Craig Contreras
+#	date: December 5, 2019
+#	attribution: Victoria, Lucas, Katarzyna
 #
 
 # -------- utility functions ------------
@@ -82,7 +83,7 @@ class RSA:
 		if e==None:
 			e = self.sample_e()
 			print('Value of e: ', e)
-		assert (gcd(e,self.phi_n)!=1)
+		assert (gcd(e,self.phi_n)==1)
 		self.e = e
 		self.d = self.calc_d()
 		assert(self.d!=None)
@@ -99,8 +100,6 @@ class RSA:
 		"""
 		returns the value of phi(self.n)
 		"""
-		print('This is p: ', self.p)
-		print('This is q: ', self.q)
 	
 		if self.p ==1:
     			phi = (self.p)*(self.q -1)
@@ -108,7 +107,6 @@ class RSA:
     			phi = (self.p - 1)*(self.q)
 		else:
     			phi = (self.p - 1)*(self.q - 1)
-		print(phi, 'THIS IS THE VALUE OF PHI')
 
 		return phi
 
@@ -119,8 +117,6 @@ class RSA:
 		"""
 		g,y,x = extended_gcd(self.e, self.phi_n)
 		d = y% self.phi_n
-		print(self.phi_n)
-		print((d*self.e) % self.phi_n, 'THIS IS THE VALUE')
 		
 		assert( (d * self.e) % self.phi_n == 1)
 		
@@ -159,14 +155,18 @@ def pollard_rho(n,verbose=0):
 	
 	"""
 	f = p_rho_function
-	x_0 = random.randint(2,n//2)
-	y_0 = x_0
+	x = random.randint(2,n//2)
+	y = x
 	d = 1
 	
 	for i in range(int(math.sqrt(n))):
-		#NEED TO DO
-		pass
-		
+		x = f(x,n)
+		y = f(f(y,n),n)
+		d = gcd(abs(x-y),n)
+		if d == n:
+			return (d, False)
+		if d!= 1:
+			return (d, n//d)
 	return (d,n//d)
 
 
@@ -194,8 +194,6 @@ def rsa_test(trials):
 		m = random.randint(2,rsa.get_public()[1])
 		c = rsa.encrypt(m)
 		m2 = rsa.decrypt(c)
-		print('Value of m: ', m)
-		print('Value of m2: ', m2)
 		assert(m==m2)
 		print("m:{}\nc:{}".format(m,c))
 	return True
