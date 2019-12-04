@@ -154,6 +154,13 @@ class ElGamal:
 
 # ------------- discret logs -------------------
 
+dictionary = {}
+if verbose:
+        print("building table ...")    for i in range(n_sqrt):
+        dictionary[pow(g, i*n_sqrt, n)] = i    if verbose:
+        print("done!")
+        print("dictionary check for match ... ")
+
 def big_step_baby_step(w,g,n,verbose=False):
 	"""
 	Find the log of w base g in the integers mod n using the big-step/baby-step method.
