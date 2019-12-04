@@ -10,7 +10,7 @@ import time
 #
 #	--student information--
 #	name: Craig Contreras
-#	date: December 5, 2019
+#	date: December 4, 2019
 #	attribution: Victoria, Lucas, Katarzyna
 #
 

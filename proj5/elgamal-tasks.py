@@ -7,7 +7,7 @@
 #	--student information--
 #	name: Craig Contreras
 #	date: December 4, 2019
-#	attribution: Victoria, Lucas, Katarzyna
+#	attribution: Victoria, Lucas, Katarzyna, George
 #
 
 
