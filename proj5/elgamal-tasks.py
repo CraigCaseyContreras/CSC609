@@ -5,8 +5,9 @@
 #	date of template: 17 nov 2019
 #
 #	--student information--
-#	name:
-#	date: 
+#	name: Craig Contreras
+#	date: December 4, 2019
+#	attribution: Victoria, Lucas, Katarzyna
 #
 
 
@@ -96,7 +97,7 @@ class ElGamal:
 		self.gen = ElGamal.Generator
 		self.secret = ElGamal.CarmichaelZero
 		self.public = self.generate_public_key()
-		# assert( self.is_generator(self.gen) )
+		assert( self.is_generator(self.gen) )
 		
 	def __repr__(self):
 		return "class ElGamal:\n\ts={}\n\tP={}\n\tg={}\n\tp={}\n".format(self.secret,
@@ -106,7 +107,12 @@ class ElGamal:
 		"""
 		given the secret key self.secret, returns the value of the public key.
 		"""
-		return None
+		gen = self.gen
+		secret = self.secret
+		prime = self.prime
+		
+		pub_key = pow(gen, secret, prime)
+		return pub_key
 
 	def get_public(self):
 		return ( self.public, self.gen, self.prime )
@@ -114,7 +120,7 @@ class ElGamal:
 	def set_params(self, secret, gen, prime):
 		self.secret, self.gen, self.prime = secret, gen, prime
 		self.public = self.generate_public_key()
-		# assert( self.is_generator(self.gen))
+		assert( self.is_generator(self.gen))
 
 	def gen_random(self):
 		return random.randint(self.prime//4,self.prime//2)
@@ -132,24 +138,42 @@ class ElGamal:
 		"""
 		given a number m, return a pair which is the ElGamal encryption of m
 		"""
-		r = self.gen_random()
-		return ("g^r","m * h^r")
+		prime = self.prime
+		rand_gen = self.gen_random()
+		gen = self.gen
+		public = self.public
+		
+		r_a = pow(gen, rand_gen, prime)
+		r_b = pow(public, rand_gen, prime)
+		r_b = (r_b * m) % prime
+		return (r_a, r_b)
 
 	def calc_inverse(self,x):
 		"""
 		ElGamal decryption might need inverses. If so, implement this function.
 		Given an x this function returns y which is the inverse of x mod self.prime
 		"""
-		y = None
-		# assert( (x*y) % self.prime == 1)
-		return y
+		prime = self.prime
+		y = pow(x, (prime - 2)//2, prime) % prime
+		y = (y*y) % prime
+		if (prime - 2) % 2 ==0:
+			return y
+		else:
+			return (x*y) % prime
+		
+		assert( (x*y) % prime == 1)
 
 	def decrypt(self, c):
 		"""
 		Given an ElGamal encryption c, of format given by the encrypt function, 
 		return the decrypted m
 		"""
-		return "the m from encrypt"
+		c1 = c[0]
+		c2 = c[1]
+		m = pow(c1, (self.prime - self.secret -1), self.prime)
+		m = (m*c2) % self.prime
+		return m
+		#return "the m from encrypt"
 
 
 # ------------- discret logs -------------------
@@ -159,25 +183,32 @@ def big_step_baby_step(w,g,n,verbose=False):
 	Find the log of w base g in the integers mod n using the big-step/baby-step method.
 	"""
 	n_sqrt = isqrt(n)
-	dictionary = []
+	d = {}
 
 	if verbose:
 		print("building table ...")
 	
 	for i in range(n_sqrt):
-		dictionary[pow(g,i*n_sqrt,n)] = i
+		d[pow(g,i,n)] = i
+	
+	try_this = pow(g, n_sqrt*(n-2), n)
+	
+	for k in range(n_sqrt):
+		h = (w * pow(try_this,k,n)) % n
+		if h in d:
+			return k*n_sqrt + d[h]
+			
+	if verbose:
+		print('building table ...')
 
 	if verbose:
 		print("done!")
-		print("checking the dictionary for match(es) ...")
+		print('sorting table ...')
+		
+	if verbose:
+		print('done!')
+		print('binary search for match ...')
 
-	for j in range(n_sqrt):
-		h = (w*pow(g,j,n)) % n
-		found = dictionary.get(h)
-		if found:
-			v = (found*n_sqrt - j) % n
-			assert (pow(g,v,n)==w)
-			return v
 
 def d_log(w,g,n):
 	"""
@@ -194,7 +225,7 @@ def d_log(w,g,n):
 	if pow(g,(n-1)//2,n)==1:
 		return (False, "{} is a quadratic residue mod {}".format(g,n))
 	log_w = big_step_baby_step(w,g,n)
-	#assert(pow(g,log_w,n)==w)
+	assert(pow(g,log_w,n)==w)
 	return (True,log_w)
 
 
@@ -254,10 +285,18 @@ def make_challenge(secret):
 
 def decode_challenge(secret,cipher_text, verbose=False):
 
+	#Help from Lucas - needed to fix this because otherwise, odd length error
 	def int_2_ascii(i):
+		h = hex(i)[2:]
+		if len(h) % 2 ==1:
+			h = '0' + h
+		a = binascii.unhexlify(h)
+		return a	
+		
+	'''def int_2_ascii(i):
 		h = hex(i)
 		a = binascii.unhexlify(h[2:])
-		return a
+		return a'''
 
 	ct = cipher_text
 	eg = ElGamal()
@@ -285,10 +324,11 @@ discrete_log_test(target_log,limit_on_power)
 
 # the public key is 123
 # you need to figure out the secret key
-secret = None
+secret = d_log(123, ElGamal().gen, ElGamal().prime)[1]
+print('Secret: ', secret)
 message = decode_challenge(secret,
 		[(879059454310780, 893889137529005), (123475997005350, 1268193986275797), (209827495157778, 790139893489473)])
-print(message)
+print('Message: ', message)
 
 
 # ------------ EOF ------------------
