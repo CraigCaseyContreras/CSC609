@@ -132,7 +132,18 @@ class ElGamal:
 		# check that (p-1) is the smallest positive integer such
 		# pow(g,p-1,n)==1. but do it efficiently, given the assumptions
 		# about how (p-1) factors
-		return True
+		
+		prime = self.prime
+
+		if (not 1 <= g <= (prime -1)):
+			return False
+		q_dummy = (prime - 1)/2
+		if (pow(g, 2, prime) == 1):
+			return False
+		elif (pow(g, int(q_dummy), prime) == 1):
+			return False
+		else:
+			return True 
 		
 	def encrypt(self, m):
 		"""

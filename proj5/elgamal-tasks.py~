@@ -7,7 +7,7 @@
 #	--student information--
 #	name: Craig Contreras
 #	date: December 4, 2019
-#	attribution: Victoria, Lucas, Katarzyna
+#	attribution: Victoria, Lucas, Katarzyna, George
 #
 
 
@@ -132,7 +132,16 @@ class ElGamal:
 		# check that (p-1) is the smallest positive integer such
 		# pow(g,p-1,n)==1. but do it efficiently, given the assumptions
 		# about how (p-1) factors
-		return True
+
+		if (not 1 <= g <= (self.prime -1)):
+			return False
+		q_dummy = (self.prime - 1)/2
+		if (pow(g, 2, self.prime) == 1):
+			return False
+		elif (pow(g, int(q_dummy), self.prime) == 1):
+			return False
+		else:
+			return True 
 		
 	def encrypt(self, m):
 		"""
